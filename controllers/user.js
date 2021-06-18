@@ -6,9 +6,10 @@ const User = require("../models/users");
 const userSignup = async (req, res, next) => {
 	const error = validationResult(req);
 	if (!error.isEmpty()) {
-		return res
-			.status(422)
-			.json("Invalid data entered, please enter data correctly");
+		res.status(422);
+		return next(
+			new Error("Invalid data entered, please enter data correctly")
+		);
 	}
 
 	const { name, email, password } = req.body;
@@ -17,24 +18,21 @@ const userSignup = async (req, res, next) => {
 	try {
 		hasUser = await User.findOne({ email });
 	} catch (error) {
-		return res
-			.status(500)
-			.json({ error: "Signed Up failed, please try again !" });
+		res.status(500);
+		return next(new Error("Signed Up failed, please try again !"));
 	}
 
 	if (hasUser) {
-		return res
-			.status(500)
-			.json({ error: "Signed Up failed, user already exists." });
+		res.status(500);
+		return next(new Error("Signed Up failed, User already exist !"));
 	}
 
 	let hashedPassword;
 	try {
 		hashedPassword = await bcrypt.hash(password, 10);
 	} catch (err) {
-		return res
-			.status(500)
-			.json({ error: "Could not create user, please try again!" });
+		res.status(500);
+		return next(new Error("Could not create user, please try again !"));
 	}
 
 	const newUser = new User({
@@ -46,10 +44,8 @@ const userSignup = async (req, res, next) => {
 	try {
 		await newUser.save();
 	} catch (error) {
-		console.log(error);
-		return res
-			.status(500)
-			.json({ error: "Creating new user failed, please try again!" });
+		res.status(500);
+		return next(new Error("Creating new user failded, please try again !"));
 	}
 
 	try {
@@ -61,9 +57,8 @@ const userSignup = async (req, res, next) => {
 			}
 		);
 	} catch (error) {
-		return res
-			.status(500)
-			.json({ error: "Creating new user failed, please try again!" });
+		res.status(500);
+		return next(new Error("Creating new user failded, please try again !"));
 	}
 
 	res.status(201).json({
@@ -81,11 +76,13 @@ const userLogin = async (req, res, next) => {
 	try {
 		identifiedUser = await User.findOne({ email });
 	} catch (error) {
-		return res.status(500).json("Logging In failed, please try again !");
+		res.status(500);
+		return next(new Error("Logging In failed, please try again !"));
 	}
 
 	if (!identifiedUser) {
-		return res.status(403).json("User not found , please check email.");
+		res.status(403);
+		return next(new Error("User not found , please check email."));
 	}
 
 	let isValidUser = false;
@@ -93,17 +90,19 @@ const userLogin = async (req, res, next) => {
 		isValidUser = await bcrypt.compare(password, identifiedUser.password);
 	} catch (err) {
 		console.log(err);
-		return res
-			.status(500)
-			.json(
+		res.status(500);
+		return next(
+			new Error(
 				"Could not log you in, please check your credentials and try again."
-			);
+			)
+		);
 	}
 
 	if (!isValidUser) {
-		return res
-			.status(401)
-			.json("Invalid credentials, please check your password.");
+		res.status(401);
+		return next(
+			new Error("Invalid password entered, please try again later")
+		);
 	}
 
 	try {
@@ -115,9 +114,8 @@ const userLogin = async (req, res, next) => {
 			}
 		);
 	} catch (error) {
-		return res
-			.status(500)
-			.json({ error: "Logging user failed, please try again!" });
+		res.status(500);
+		return next(new Error("Logging user failed, please try again!"));
 	}
 
 	res.status(200).json({

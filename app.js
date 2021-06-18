@@ -22,6 +22,16 @@ app.use((req, res, next) => {
 
 app.use("/api/user", userRoutes);
 
+app.use((error, req, res, next) => {
+	if (res.headerSent) {
+		return next(error);
+	}
+	res.status(error.code || 500);
+	res.json({
+		message: error.message || "An unknown error occured.",
+	});
+});
+
 connectDb()
 	.then(() => {
 		app.listen(PORT, () => {
